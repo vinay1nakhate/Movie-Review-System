@@ -1,5 +1,5 @@
 const express = require('express')
-const db = require('../db/db')
+const pool = require('../db/db')
 const { createResult } = require('../utils/result')
 const router = express.Router()
 
@@ -20,7 +20,7 @@ router.post('/', (req, res) => {
 
     // Check if user already added a review for this movie
     const checkSql = `SELECT * FROM reviews WHERE movie_id = ? AND user_id = ?`
-    db.query(checkSql, [movie_id, user_id], (err, resultCheck) => {
+    pool.query(checkSql, [movie_id, user_id], (err, resultCheck) => {
         if (err) {
             res.send(createResult(err))
             return
@@ -36,7 +36,7 @@ router.post('/', (req, res) => {
             INSERT INTO reviews (movie_id, user_id, rating, comment)
             VALUES (?, ?, ?, ?)
         `
-        db.query(insertSql, [movie_id, user_id, rating, comment], (err, resultInsert) => {
+        pool.query(insertSql, [movie_id, user_id, rating, comment], (err, resultInsert) => {
             res.send(createResult(err, resultInsert))
         })
     })
@@ -68,7 +68,7 @@ router.get('/movie/:movie_id', (req, res) => {
         LIMIT ? OFFSET ?
     `
 
-    db.query(sql, [user_id || 0, movie_id, parseInt(limit), parseInt(offset)], (err, resultData) => {
+    pool.query(sql, [user_id || 0, movie_id, parseInt(limit), parseInt(offset)], (err, resultData) => {
         res.send(createResult(err, resultData))
     })
 })
@@ -86,7 +86,7 @@ router.get('/:review_id', (req, res) => {
         INNER JOIN user u ON r.user_id = u.id
         WHERE r.review_id = ?
     `
-    db.query(sql, [review_id], (err, resultData) => {
+    pool.query(sql, [review_id], (err, resultData) => {
         res.send(createResult(err, resultData[0]))
     })
 })
@@ -109,7 +109,7 @@ router.put('/:review_id', (req, res) => {
 
     // Verify ownership
     const checkSql = `SELECT * FROM reviews WHERE review_id = ? AND user_id = ?`
-    db.query(checkSql, [review_id, user_id], (err, resultCheck) => {
+    pool.query(checkSql, [review_id, user_id], (err, resultCheck) => {
         if (err) {
             res.send(createResult(err))
             return
@@ -142,7 +142,7 @@ router.put('/:review_id', (req, res) => {
         const updateSql = `UPDATE reviews SET ${fields.join(', ')} WHERE review_id = ?`
         values.push(review_id)
 
-        db.query(updateSql, values, (err, resultUpdate) => {
+        pool.query(updateSql, values, (err, resultUpdate) => {
             res.send(createResult(err, resultUpdate))
         })
     })
@@ -161,7 +161,7 @@ router.delete('/:review_id', (req, res) => {
 
     // Verify ownership
     const checkSql = `SELECT * FROM reviews WHERE review_id = ? AND user_id = ?`
-    db.query(checkSql, [review_id, user_id], (err, resultCheck) => {
+    pool.query(checkSql, [review_id, user_id], (err, resultCheck) => {
         if (err) {
             res.send(createResult(err))
             return
@@ -173,7 +173,7 @@ router.delete('/:review_id', (req, res) => {
         }
 
         const deleteSql = `DELETE FROM reviews WHERE review_id = ?`
-        db.query(deleteSql, [review_id], (err, resultDelete) => {
+        pool.query(deleteSql, [review_id], (err, resultDelete) => {
             res.send(createResult(err, resultDelete))
         })
     })

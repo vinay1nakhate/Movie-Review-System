@@ -2,8 +2,6 @@ const express = require('express')
 const pool = require('../db/db')
 const result = require('../utils/result')
 const router = express.Router()
-const multer = require('multer')
-const upload = multer({ dest: 'images' })
 
 // Get all movies
 router.get('/', (req, res) => {
@@ -14,8 +12,8 @@ router.get('/', (req, res) => {
         LEFT JOIN categories c ON m.category_id = c.category_id
         ORDER BY m.title
     `
-    db.query(sql, (err, result) => {
-        res.send(createResult(err, result))
+    pool.query(sql, (err, data) => {
+        res.send(result.createResult(err, data))
     })
 })
 
@@ -29,8 +27,8 @@ router.get('/:movie_id', (req, res) => {
         LEFT JOIN categories c ON m.category_id = c.category_id
         WHERE m.movie_id = ?
     `
-    db.query(sql, [movie_id], (err, result) => {
-        res.send(createResult(err, result[0]))
+    pool.query(sql, [movie_id], (err, data) => {
+        res.send(result.createResult(err, data[0]))
     })
 })
 

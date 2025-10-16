@@ -24,13 +24,22 @@ router.post('/login', (req, res) => {
     pool.query(sql, [email, encryptedPassword], (error, data) => {
         if (data) {
             if (data.length != 0) {
+                const loggedInUser = data[0];
                 const payload = {
-                    userId: data[0].id
+                    userId: loggedInUser.id
                 }
                 const token = jwt.sign(payload, config.secret)
+
+                const userObject = {
+                    id: loggedInUser.id,
+                    firstName: loggedInUser.firstName,
+                    lastName: loggedInUser.lastName,
+                    email: loggedInUser.email,
+                    name: `${loggedInUser.firstName} ${loggedInUser.lastName}` 
+                };
                 const body = {
                     token: token,
-                    name: `${data[0].firstName} ${data[0].lastName}`
+                    user: userObject
                 }
                 res.send(result.createSuccessResult(body))
             }
