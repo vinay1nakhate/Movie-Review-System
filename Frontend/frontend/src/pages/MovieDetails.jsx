@@ -1,61 +1,51 @@
-import React, { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { Container, Typography, Grid, Box, Paper, Divider, LinearProgress, AppBar, Toolbar, Button } from '@mui/material'
-import API from '../api/api'
-import RatingStars from '../components/RatingStars'
-import ReviewList from '../components/ReviewList'
-import ReviewForm from '../components/ReviewForm'
-import { useSelector } from 'react-redux'
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Container, Typography, Grid, Box, Paper, Divider, LinearProgress, AppBar, Toolbar, Button } from '@mui/material';
+import API from '../api/api';
+import RatingStars from '../components/RatingStars';
+import ReviewList from '../components/ReviewList';
+import ReviewForm from '../components/ReviewForm';
+import { useSelector } from 'react-redux';
+import useReviews from '../hooks/userReviews';
 
 export default function MovieDetails() {
-  const { id } = useParams()
-  const [movie, setMovie] = useState(null)
-  const [reviews, setReviews] = useState([])
-  const [ratingStats, setRatingStats] = useState({1:0,2:0,3:0,4:0,5:0})
-  const user = JSON.parse(localStorage.getItem('user'))
-  const [editingReview, setEditingReview] = useState(null)
-  const navigate = useNavigate()
-  const auth = useSelector(state => state.auth)
+  const { id } = useParams();
+  const [movie, setMovie] = useState(null);
+  const [editingReview, setEditingReview] = useState(null);
+  const user = JSON.parse(localStorage.getItem('user'));
+  const auth = useSelector(state => state.auth);
+  const navigate = useNavigate();
 
-  const fetchReviews = async () => {
-    try {
-      const res = await API.get(`/reviews/movie/${id}?user_id=${user?.id || 0}&limit=50&offset=0`)
-      if (res.data.status === 'success') {
-        const revs = res.data.data
-        setReviews(revs)
-        const stats = {1:0,2:0,3:0,4:0,5:0}
-        revs.forEach(r => { stats[r.rating] = (stats[r.rating] || 0) + 1 })
-        setRatingStats(stats)
-      }
-    } catch (err) {
-      console.error(err)
-    }
-  }
+  // Use custom hook for reviews
+  const { reviews, ratingStats, fetchReviews } = useReviews(id, user?.id);
 
   useEffect(() => {
-    API.get(`/movies/${id}`).then(res => { if (res.data.status === 'success') setMovie(res.data.data) }).catch(err => console.error(err))
-    fetchReviews()
-  }, [id])
+    API.get(`/movies/${id}`)
+      .then(res => { if (res.data.status === 'success') setMovie(res.data.data) })
+      .catch(err => console.error(err));
+  }, [id]);
 
-  const avgRating = reviews.length > 0 ? (reviews.reduce((s,r)=>s+r.rating,0)/reviews.length).toFixed(1) : 0
+  const avgRating = reviews.length > 0 
+    ? (reviews.reduce((s,r) => s + r.rating, 0) / reviews.length).toFixed(1) 
+    : 0;
 
   const handleEdit = (review) => {
-    setEditingReview(review)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+    setEditingReview(review);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleDelete = async (review) => {
-    if (!confirm('Delete your review?')) return
+    if (!confirm('Delete your review?')) return;
     try {
-      await API.delete(`/reviews/${review.review_id}`, { data: { user_id: user.id } })
-      fetchReviews()
+      await API.delete(`/reviews/${review.review_id}`, { data: { user_id: user.id } });
+      fetchReviews(); // Refresh reviews after deletion
     } catch (err) {
-      console.error(err)
-      alert('Failed to delete')
+      console.error(err);
+      alert('Failed to delete');
     }
-  }
+  };
 
-  if (!movie) return <Typography>Loading...</Typography>
+  if (!movie) return <Typography>Loading...</Typography>;
 
   return (
     <>
@@ -65,6 +55,7 @@ export default function MovieDetails() {
           <Button color='inherit' onClick={() => navigate('/movies')}>Back</Button>
         </Toolbar>
       </AppBar>
+
       <Container sx={{ mt:4 }}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
@@ -78,6 +69,7 @@ export default function MovieDetails() {
               </Box>
             </Paper>
           </Grid>
+
           <Grid item xs={12} md={8}>
             <Typography variant='h6' gutterBottom>Rating Breakdown</Typography>
             {Object.entries(ratingStats).sort((a,b)=>b[0]-a[0]).map(([stars,count])=>(
@@ -87,12 +79,20 @@ export default function MovieDetails() {
                 <Typography>{count}</Typography>
               </Box>
             ))}
+
             <Divider sx={{ my:2 }} />
+
             <Typography variant='h6' gutterBottom>Reviews</Typography>
             <ReviewList reviews={reviews} user_id={user?.id} onEdit={handleEdit} onDelete={handleDelete} />
-            {/* show form; if editingReview provided, pass it */}
+
             {auth.user ? (
-              <ReviewForm movie_id={parseInt(id)} user_id={auth.user.id} existingReview={editingReview} onReviewAdded={fetchReviews} onCancelEdit={() => setEditingReview(null)} />
+              <ReviewForm
+                movie_id={parseInt(id)}
+                user_id={auth.user.id}
+                existingReview={editingReview}
+                onReviewAdded={fetchReviews}
+                onCancelEdit={() => setEditingReview(null)}
+              />
             ) : (
               <Typography>Please login to add or edit your review.</Typography>
             )}
@@ -100,5 +100,5 @@ export default function MovieDetails() {
         </Grid>
       </Container>
     </>
-  )
+  );
 }
