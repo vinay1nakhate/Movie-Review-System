@@ -1,8 +1,8 @@
-drop database if exists movie_review_sys;
+drop database if exists railway;
 
-create database movie_review_sys;
+create database railway;
 
-use movie_review_sys;
+use railway;
 
 create table user(
     id integer AUTO_INCREMENT PRIMARY KEY,
